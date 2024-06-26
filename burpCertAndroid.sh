@@ -23,39 +23,41 @@ function ctrl_c(){
 
 # INSTALL CERT FUNCTION
 function installCert() {
-
-	echo "Install function"
-
+	echo "Install function (To-Do)"
 }
 
 # DEVICES LIST FUNCTION
 function devicesList() {
-
-	echo "Devices function"
+	echo "Devices function (To-Do)"
 	installCert
-
 }
 
-
 ## ADB INSTALLLED?
+echo -e "\n[${redColor}*${endColor}] Checking if ADB is installed."
 if command -v adb &> /dev/null; then
-    echo -e "\n[${redColor}*${endColor}] Checking if ADB is installed."
     echo -e "[${greenColor}DONE${endColor}]"
 
-    ## BURP RUNNING?
-    if ps aux | grep -v grep | grep -q burpsuite; then
-    	echo -e "\n[${redColor}*${endColor}] Checking if BurpSuite is Running."
-    	echo -e "[${greenColor}DONE${endColor}]\n"
+	## OPENSSL IS INSTALLED?
+	echo -e "\n[${redColor}*${endColor}] Checking if OPENSSL is installed."
+    if command -v openssl &> /dev/null; then
+	    echo -e "[${greenColor}DONE${endColor}]"
 
-		## Call Function
-		devicesList
-    else
-        echo -e "\n[${redColor}!${endColor}] Please run BurpSuite."
-        exit 0
-    fi
+    	## BURP RUNNING?
+		echo -e "\n[${redColor}*${endColor}] Checking if BurpSuite is Running."
+    	if ps aux | grep -v grep | grep -q burpsuite; then
+    	    echo -e "[${greenColor}DONE${endColor}]\n"
 
+			## Call Function
+			devicesList
+    	else
+        	echo -e "[${redColor}!${endColor}] Please run BurpSuite.\n"
+        	exit 0
+    	fi
+	else
+    	echo -e "\n[${redColor}!${endColor}] OPENSSL is not installed, please install OPENSSL."
+		exit 0
+	fi
 else
-    echo -e "\n[${redColor}!${endColor}] ADB is not installed, please instal ADB."
+    echo -e "\n[${redColor}!${endColor}] ADB is not installed, please install ADB."
     exit 0
 fi
-
