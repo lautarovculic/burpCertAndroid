@@ -33,18 +33,18 @@ function downloadCert() {
                 mv burpsuite.pem "$hash_value.0"
                 rm cacert.der
                 echo -e "[${greenColor}DONE${endColor}]\n"
+                selectDevice
             else
-                echo -e "[${redColor}ERROR${endColor}] Failed to generate hash value"
+                echo -e "[${redColor}ERROR${endColor}] Failed to generate hash value\n"
                 rm cacert.der burpsuite.pem
             fi
         else
-            echo -e "[${redColor}ERROR${endColor}] Failed to convert .der to .pem format"
+            echo -e "[${redColor}ERROR${endColor}] Failed to convert .der to .pem format\n"
             rm cacert.der
         fi
     else
-        echo -e "[${redColor}ERROR${endColor}] Failed to download certificate"
+        echo -e "[${redColor}ERROR${endColor}] Failed to download certificate\n"
     fi
-selectDevice
 }
 
 # SELECT DEVICE
@@ -54,7 +54,7 @@ function selectDevice() {
     device_count=$(echo "$devices" | wc -l)
 
     if [ "$device_count" -eq 0 ]; then
-        echo -e "[${redColor}ERROR${endColor}] Please, run Genymotion."
+        echo -e "[${redColor}ERROR${endColor}] Please, run Genymotion.\n"
         return
     elif [ "$device_count" -eq 1 ]; then
         device=$(echo "$devices" | awk '{print $1}')
@@ -74,18 +74,34 @@ function selectDevice() {
 
         export DEVICE_NAME="$device"
         export DEVICE_IP="$device_ip"
+        installCert
     else
-        echo -e "[${redColor}ERROR${endColor}] Can't get a device. Check connections and try again."
+        echo -e "[${redColor}ERROR${endColor}] Can't get a device. Check connections and try again.\n"
     fi
-installCert
 }
 
 # INSTALL CERT
 function installCert() {
 	echo -e "[${redColor}*${endColor}] Installing cert on device"
 	adb -s $device root >/dev/null 2>&1
-	echo -e "[${redColor}*${endColor}] TO-DO"
+	sleep 1
+	adb -s $device shell mount -o remount,rw /
+	adb -s $device push 9a5ba575.0 /system/etc/security/cacerts/
+	adb -s $device shell ls /system/etc/security/cacerts/9a5ba575.0 >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+        echo -e "[${greenColor}*${endColor}] Cert file found on device"
 
+        echo -e "[${greenColor}*${endColor}] Cert installed"
+        echo -e "[${greenColor}DONE${endColor}]\n"
+
+        rm $hash_value.0
+
+        echo -e "[${greenColor}https://lautarovculic.com${endColor}]\n"
+        echo -e "Do you want automatize and control the flow of proxy?"
+        echo -e "Check [${greenColor}https://github.com/lautarovculic/burpCertAndroid/?tab=readme-ov-file#setup-your-proxy-in-bash${endColor}]\n"
+    else
+        echo -e "[${redColor}!${endColor}] Cert file not found on device. Installation failed.\n"
+    fi
 }
 
 ## ADB INSTALLLED?
