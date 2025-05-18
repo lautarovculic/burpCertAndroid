@@ -1,6 +1,6 @@
 # BurpSuite Cert for Android Installer
 
-## v1
+## v2.0.0
 
 ## About
 This is an automated script for install BurpSuite certificate in Android devices.
