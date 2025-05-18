@@ -24,11 +24,12 @@ function ctrl_c(){
 # DOWNLOAD CERT
 function downloadCert() {
     echo -e "[${redColor}*${endColor}] Downloading Cert"
-    if curl -s localhost:8080/cert -o cacert.der; then
+    if curl -s http://127.0.0.1:8080/cert -o cacert.der; then
         echo -e "[${redColor}*${endColor}] Converting .der to .pem format"
-        if openssl x509 -inform der -in cacert.der -out burpsuite.pem 2> /dev/null; then
+        if openssl x509 -inform der -in cacert.der -out burpsuite.pem 2>/dev/null; then
             echo -e "[${redColor}*${endColor}] Checking and Renaming cert to hash"
-            hash_value=$(openssl x509 -inform PEM -subject_hash_old -in burpsuite.pem 2> /dev/null | head -n 1)
+            hash_value=$(openssl x509 -inform PEM -subject_hash_old -in burpsuite.pem 2>/dev/null | head -n 1)
+            export hash_value
             if [[ -n $hash_value ]]; then
                 mv burpsuite.pem "$hash_value.0"
                 rm cacert.der
@@ -60,9 +61,8 @@ function selectDevice() {
         device=$(echo "$devices" | awk '{print $1}')
         echo -e "[${greenColor}*${endColor}] One device has been found: $device"
     else
-        echo -e "[${greenColor}*${endColor}] Some devices has been found:"
+        echo -e "[${greenColor}*${endColor}] Some devices have been found:"
         echo "$devices" | nl -w2 -s') '
-
         read -p "Select a number for one device: " device_number
         device=$(echo "$devices" | sed -n "${device_number}p" | awk '{print $1}')
     fi
@@ -71,7 +71,6 @@ function selectDevice() {
         device_ip=$(adb -s "$device" shell ip route | awk '{print $9}')
         echo -e "[${greenColor}*${endColor}] Device selected: $device"
         echo -e "[${greenColor}DONE${endColor}]\n"
-
         export DEVICE_NAME="$device"
         export DEVICE_IP="$device_ip"
         installCert
@@ -82,54 +81,68 @@ function selectDevice() {
 
 # INSTALL CERT
 function installCert() {
-	echo -e "[${redColor}*${endColor}] Installing cert on device"
-	adb -s $device root >/dev/null 2>&1
-	sleep 1
-	adb -s $device shell mount -o remount,rw /
-	adb -s $device push 9a5ba575.0 /system/etc/security/cacerts/
-	adb -s $device shell ls /system/etc/security/cacerts/9a5ba575.0 >/dev/null 2>&1
-	if [ $? -eq 0 ]; then
-        echo -e "[${greenColor}*${endColor}] Cert file found on device"
+    local cert="$hash_value.0"
 
+    echo -e "[${redColor}*${endColor}] Installing cert on device"
+    adb -s "$device" root >/dev/null 2>&1 || { echo -e "[${yellowColor}!${endColor}] adb root failed"; manualInstall "$cert"; return; }
+
+    adb -s "$device" remount >/dev/null 2>&1 || { echo -e "[${yellowColor}!${endColor}] adb remount failed"; manualInstall "$cert"; return; }
+
+    echo -e "[${redColor}*${endColor}] Trying direct push to /system/etc/security/cacerts/"
+    adb -s "$device" push "$cert" /system/etc/security/cacerts/ >/dev/null 2>&1
+
+    adb -s "$device" shell ls /system/etc/security/cacerts/"$cert" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
         echo -e "[${greenColor}*${endColor}] Cert installed"
         echo -e "[${greenColor}DONE${endColor}]\n"
-
-        rm $hash_value.0
 
         echo -e "[${greenColor}https://lautarovculic.com${endColor}]\n"
         echo -e "Do you want automatize and control the flow of proxy?"
         echo -e "Check [${greenColor}https://github.com/lautarovculic/burpCertAndroid/?tab=readme-ov-file#setup-your-proxy-in-bash${endColor}]\n"
     else
-        echo -e "[${redColor}!${endColor}] Cert file not found on device. Installation failed.\n"
+        echo -e "[${yellowColor}!${endColor}] Direct install failed"
+        manualInstall "$cert"
     fi
 }
 
-## ADB INSTALLLED?
+# MANUAL INSTALL
+function manualInstall() {
+    local cert="$1"
+    adb -s "$device" push "$cert" /sdcard/ >/dev/null 2>&1
+    echo -e "\n[${blueColor}Manual Steps${endColor}]"
+
+	echo -e "${grayColor}1.${endColor} adb shell"
+	echo -e "${grayColor}2.${endColor} su"
+	echo -e "${grayColor}3.${endColor} mount -o remount,rw /system"
+	echo -e "${grayColor}4.${endColor} cp /sdcard/$cert /system/etc/security/cacerts/"
+	echo -e "${grayColor}5.${endColor} chown root:root /system/etc/security/cacerts/$cert"
+	echo -e "${grayColor}6.${endColor} chmod 644 /system/etc/security/cacerts/$cert"
+	echo -e "${grayColor}7.${endColor} reboot"
+
+    echo -e "\n[${purpleColor}*${endColor}] After reboot, the CA will be trusted.\n"
+}
+
+# MAIN VALIDATIONS
 echo -e "\n[${redColor}*${endColor}] Checking if ADB is installed."
-if command -v adb &> /dev/null; then
-    echo -e "[${greenColor}DONE${endColor}]"
-
-	## OPENSSL IS INSTALLED?
-	echo -e "\n[${redColor}*${endColor}] Checking if OPENSSL is installed."
-    if command -v openssl &> /dev/null; then
-	    echo -e "[${greenColor}DONE${endColor}]"
-
-    	## BURP RUNNING?
-		echo -e "\n[${redColor}*${endColor}] Checking if BurpSuite is Running."
-    	if ps aux | grep -v grep | grep -q burpsuite; then
-    	    echo -e "[${greenColor}DONE${endColor}]\n"
-
-			## Call Download Cert Function
-			downloadCert
-    	else
-        	echo -e "[${redColor}!${endColor}] Please run BurpSuite.\n"
-        	exit 0
-    	fi
-	else
-    	echo -e "\n[${redColor}!${endColor}] OPENSSL is not installed, please install OPENSSL."
-		exit 0
-	fi
-else
-    echo -e "\n[${redColor}!${endColor}] ADB is not installed, please install ADB."
-    exit 0
+if ! command -v adb &>/dev/null; then
+    echo -e "[${redColor}!${endColor}] ADB is not installed, please install ADB."
+    exit 1
 fi
+echo -e "[${greenColor}DONE${endColor}]"
+
+echo -e "\n[${redColor}*${endColor}] Checking if OPENSSL is installed."
+if ! command -v openssl &>/dev/null; then
+    echo -e "[${redColor}!${endColor}] OPENSSL is not installed, please install OPENSSL."
+    exit 1
+fi
+echo -e "[${greenColor}DONE${endColor}]"
+
+echo -e "\n[${redColor}*${endColor}] Checking if BurpSuite is Running."
+if ! pgrep -f burpsuite >/dev/null; then
+    echo -e "[${redColor}!${endColor}] Please run BurpSuite.\n"
+    exit 1
+fi
+echo -e "[${greenColor}DONE${endColor}]\n"
+
+# Start it all
+downloadCert
