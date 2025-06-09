@@ -113,7 +113,7 @@ function manualInstall() {
 
 	echo -e "${grayColor}1.${endColor} adb shell"
 	echo -e "${grayColor}2.${endColor} su"
-	echo -e "${grayColor}3.${endColor} mount -o remount,rw /system"
+	echo -e "${grayColor}3.${endColor} mount -o remount,rw /"
 	echo -e "${grayColor}4.${endColor} cp /sdcard/$cert /system/etc/security/cacerts/"
 	echo -e "${grayColor}5.${endColor} chown root:root /system/etc/security/cacerts/$cert"
 	echo -e "${grayColor}6.${endColor} chmod 644 /system/etc/security/cacerts/$cert"
