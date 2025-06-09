@@ -5,7 +5,7 @@
 ## About
 This is an automated script for install BurpSuite certificate in Android devices.
 
-### The script was tested and developed for Android devices running in Genymmotion.
+### The script was tested and developed for Android devices running in Genymotion.
 
 If you have errors in the execution of the script, visit the step by step in the post I have written:
 ### [POST](https://lautarovculic.com/intercept-android-app-traffic-with-burpsuite/)
