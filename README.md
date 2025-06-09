@@ -1,14 +1,9 @@
 # BurpSuite Cert for Android Installer
 
-## v2.0.0
+## v3.0.0
 
 ## About
 This is an automated script for install BurpSuite certificate in Android devices.
-
-### The script was tested and developed for Android devices running in Genymotion.
-
-If you have errors in the execution of the script, visit the step by step in the post I have written:
-### [POST](https://lautarovculic.com/intercept-android-app-traffic-with-burpsuite/)
 
 ## Setup your proxy in bash
 
@@ -18,8 +13,7 @@ alias adb_set_proxy="adb -s <deviceIP>:5555 shell settings put global http_proxy
 ```bash
 alias adb_unset_proxy='adb -s <deviceIP> shell settings put global http_proxy :0'
 ```
-
-- **deviceIP**: Android Genymotion IP Address.
+- **deviceIP**: Android IP Address.
 - **interfaceNetwork**: Network interface where your local IPv4 address is located.
 
 https://lautarovculic.com
